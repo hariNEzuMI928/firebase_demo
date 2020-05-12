@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>firebase test</title>
+    <script defer src="/__/firebase/7.14.2/firebase-app.js"></script>
     <script defer src="/__/firebase/7.14.2/firebase-auth.js"></script>
     <script defer src="/__/firebase/7.14.2/firebase-firestore.js"></script>    
     <script defer src="/__/firebase/init.js"></script>
@@ -28,8 +29,7 @@
         login_chack();
 
         // wite
-        var db = firebase.firestore();
-        document.getElementById("sendtext-btn").onclick = function() {
+        document.getElementById("login-btn").onclick = function() {
             var provider = new firebase.auth.GoogleAuthProvider();
             firebase.auth().signInWithPopup(provider).then(function(result) {
                 login_chack();
