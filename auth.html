@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>firebase test</title>
+    <script defer src="/__/firebase/7.14.2/firebase-auth.js"></script>
+    <script defer src="/__/firebase/7.14.2/firebase-firestore.js"></script>    
+    <script defer src="/__/firebase/init.js"></script>
+  </head>
+  <body>
+    <div>
+      <input type="text" id="login-status" readonly="readonly">
+      <button id="login-btn">login</button>
+    </div>
+    <script>
+        function login_chack(){
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    document.getElementById("login-status").value="login"
+                }else{
+                    document.getElementById("login-status").value="not logged"
+                }
+            });            
+        }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // 1st check
+        login_chack();
+
+        // wite
+        var db = firebase.firestore();
+        document.getElementById("sendtext-btn").onclick = function() {
+            var provider = new firebase.auth.GoogleAuthProvider();
+            firebase.auth().signInWithPopup(provider).then(function(result) {
+                login_chack();
+            }).catch(function(error) {
+                login_chack();
+            });
+        };
+      
+      });
+    </script>
+  </body>
+</html>

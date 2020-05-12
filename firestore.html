@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>firestore test</title>
+    <script defer src="/__/firebase/7.14.2/firebase-app.js"></script>
+    <script defer src="/__/firebase/7.14.2/firebase-firestore.js"></script>    
+    <script defer src="/__/firebase/init.js"></script>
+  </head>
+  <body>
+    <div>
+      <input type="text" id="sendtext-text">
+      <button id="sendtext-btn">送信</button>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // wite
+        var db = firebase.firestore();
+        document.getElementById("sendtext-btn").onclick = function() {
+          db.collection("datas").doc("text").set(
+            {"vtext":document.getElementById("sendtext-text").value}).then(function() {
+                console.log("Document successfully written!");
+            });
+        };
+        // read
+        db.collection("datas").doc("text").get().then(function(doc) {
+          document.getElementById("sendtext-text").value=doc.data().vtext
+        });
+      
+      });
+    </script>
+  </body>
+</html>
