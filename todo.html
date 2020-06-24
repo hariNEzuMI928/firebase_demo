@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>todo app</title>
+    <script defer src="/__/firebase/7.14.2/firebase-app.js"></script>
+    <script defer src="/__/firebase/7.14.2/firebase-auth.js"></script>
+
+    <script defer src="/__/firebase/7.14.2/firebase-firestore.js"></script>    
+    <script defer src="/__/firebase/init.js"></script>
+  </head>
+  <body>
+    <div>
+      <button id="login-btn">ログイン</button>
+      <button id="logout-btn">ログアウト</button>
+      <input type="text" id="add-text">
+      <button id="add-btn">追加</button>
+      <div id="todos"></div>
+        <!--ここに TODO が追加される-->
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+      var db = firebase.firestore();
+      var todos=[];
+
+      console.log("DOMContentLoaded")
+
+      //-----------------------------------
+      // 画面への追加 と Firestoreへの追加を行う
+      // firestore_witeはクラウドへの書き込みを行うかどうか？
+      function add(text,firestore_wite=false){
+        todos.push(text)
+
+        var div = document.createElement('div'); // 追加する基礎要素作成
+
+        var btn = document.createElement('button');// 基礎要素の配下に削除ボタンの作成
+        btn.textContent="削除"
+        btn.addEventListener('click',function(event){
+          todos.splice((todos.indexOf(text)),1);
+          div.parentNode.removeChild(div);
+          firebase_wite(todos);
+        })
+
+        div.textContent = text;//表示文字の追加
+        div.appendChild(btn);
+
+        document.getElementById('todos').appendChild(div);
+        if(firestore_wite){
+          firebase_wite(todos);// Firebaseへの書き込み
+        }
+      }
+      //-----------------------------------
+      // 表示データ削除
+      function v_flash(){
+        document.getElementById('todos').textContent = null;
+        todos=[]
+      }
+      //-----------------------------------
+      // Firestoreへのデータ書き込み
+      function firebase_wite(d){
+        firebase.auth().onAuthStateChanged(function(user) {
+          if (user) {
+            // 下記のようなイメージのデータを書き込む
+            // datas>(user.id)>{data:[(data)]}
+              var cnf = db.collection("datas").doc(user.uid).set({data:d}).then(function(docRef) {
+                console.log("wite data: ", d,"userid:",user.uid);
+              }).catch(function(error) {
+                console.error("error wite document: ", error);
+              });
+          }else{
+              console.log("1no login")
+          }
+        });
+      }
+
+      //-----------------------------------
+      // Firestoreからのデータ読み込み
+      // 非同期であるため、引数に関数を渡して、成功したら呼び出す形
+      function firebase_read(user,cb){
+        // todo read
+          if (user) {
+            // 下記のようなイメージのデータを読み込む
+            // datas>(user.id)>{data:[(data)]}
+            db.collection("datas").doc(user.uid).get().then(function(doc) {
+                if (doc.exists) {
+                    console.log("user",user.uid,"get data:",doc.data().data);
+                    cb&&cb(doc.data().data)//呼び出し元が指定した関数の呼び出し
+                } else {
+                    console.log("no document!");
+                }
+            }).catch(function(error) {
+                console.log("error read document:", error);
+            });
+          }else{
+              console.log("2no login")
+          }
+      }
+
+      //-----------------------------------
+      // Firestoreからのデータ読み込みを行い、UIに更新する。
+      function read(user){
+        firebase_read(user,function(d){
+          d.forEach(function(i){
+            add(i,false);// firestoreから読み込まれた結果であるため、追記はしない
+            console.log("read:",i)
+          });
+        })
+      }
+      //-----------------------------------
+      // ログイン済みかどうかを確認する
+      // ログイン済みの場合は、UIを更新する
+      function login_chack(){
+        var flag=0;
+          firebase.auth().onAuthStateChanged(function(user) {
+            if(flag==0){
+                console.log("flag0",flag++)
+                v_flash();//要素を全部削除
+                if (user) {
+                  console.log("login_chack:login")
+                  read(user);
+                  document.getElementById('login-btn').setAttribute('hidden', 'true');//login ボタンを消す
+                  document.getElementById('logout-btn').removeAttribute('hidden');//logout ボタンを出す
+                }else{
+                  console.log("login_chack:no login")
+                  document.getElementById('login-btn').removeAttribute('hidden');//login ボタンを出す
+                  document.getElementById('logout-btn').setAttribute('hidden', 'true');//logout ボタンを消す
+                }
+              }
+          });            
+        }
+
+      //-----------------------------------
+      // ログインボタンのクリックイベント
+      document.getElementById("login-btn").onclick = function() {
+            var provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            var flag=0;
+            // google ログイン処理
+            firebase.auth().signInWithPopup(provider).then(function(result) {
+              if(flag==0 && result.user){
+                console.log("flag1",flag++)
+                login_chack();
+              }
+            }).catch(function(e) {
+              if(flag){
+                console.log("flag2",flag++)
+                console.log(`login err :`,e);
+                login_chack();
+              }
+            });
+        };
+
+      //-----------------------------------
+      // ログアウトボタンのクリックイベント
+      document.getElementById("logout-btn").onclick = function() {
+          var flag=0;
+          firebase.auth().signOut().then(()=>{
+            if(flag==0){
+              console.log("flag3",flag++)
+              console.log("logout-btn:logout");
+              login_chack();
+            }
+          })
+          .catch( (e)=>{
+            if(flag){
+              console.log("flag4",flag++)
+              console.log(`logout-btn:err:`,e);
+              login_chack();
+            }
+          });
+        };
+
+      //-----------------------------------
+      // 追加ボタンのクリックイベント
+      document.getElementById("add-btn").onclick = function() {
+            add(document.getElementById("add-text").value,true);
+        };
+        login_chack()//起動時のログインチェク
+  });
+</script>
+  </body>
+</html>
